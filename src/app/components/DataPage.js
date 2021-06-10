@@ -1,9 +1,10 @@
+/* eslint-disable default-case */
 import React, {Component} from "react";
 import MaterialTable from "material-table";
 import {ActionIcon} from "./ActionIcon";
 import {displayError, popupHelper, userType} from "../Utilities";
 import {InstructorOptions, RegistrarOptions, StudentOptions} from "../Options"
-import {createNewPassword, createUserPopup, deleteUser, registrarShowUsers} from "../RegistrarUsers";
+import {createNewPassword, createUserPopup, deleteUser, editUser, registrarShowUsers} from "../RegistrarUsers";
 import {
     assignDepartmentHead,
     createDepartmentPopup,
@@ -100,6 +101,10 @@ export default class DataPage extends Component {
                             icon: () => <ActionIcon text="Del"/>,
                             tooltip: "Delete user",
                             onClick: (event, rowData) => deleteUser(rowData, this)
+                        }, {
+                            icon: () => <ActionIcon text = "Edit"/>,
+                            tooltip: "Change Name or Email",
+                            onClick: function (e, rowData) {editUser(rowData, this)}
                         }]
                     case RegistrarOptions.VIEW_DEPARTMENTS: {
                         return [{
