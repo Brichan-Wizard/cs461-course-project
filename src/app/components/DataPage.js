@@ -1,6 +1,7 @@
+/* eslint-disable default-case */
 import React, {Component} from "react";
 import MaterialTable from "material-table";
-import {listDepartments, listSchoolUsers} from "../../graphql/queries";
+import {getDepartment, listCourseReports, listCourses, listDepartments, listSchoolUsers} from "../../graphql/queries";
 import {graphqlOperation} from "@aws-amplify/api-graphql";
 import {API} from "@aws-amplify/api";
 import {toast} from "react-toastify";
@@ -8,8 +9,10 @@ import {ActionIcon} from "./ActionIcon";
 import {
     createDepartment,
     createSchoolUser,
+    createCourse,
     deleteDepartment,
-    deleteSchoolUser, updateDepartment,
+    deleteSchoolUser, 
+    updateDepartment,
     updateSchoolUser
 } from "../../graphql/mutations";
 import {getRandomInt, userType} from "../Utilities";
@@ -29,6 +32,7 @@ const RegistrarOptions = {
     VIEW_DEPARTMENTS: 1,
     ASSIGN_HEAD_STEP_1: 2,
     ASSIGN_HEAD_STEP_2: 3,
+    CREATE_COURSE: 4
 }
 
 export default class DataPage extends Component {
@@ -53,6 +57,7 @@ export default class DataPage extends Component {
             case "Student": {
                 switch (this.state.studentOption) {
                     case StudentOptions.SHOW_CLASSES:
+                    case StudentOptions.SHOW_COURSE_REPORTS:
                 }
                 break;
             }
@@ -73,6 +78,7 @@ export default class DataPage extends Component {
                         return [{title: 'Department name', field: 'name'},
                             {title: "Head instructor", field: 'head_name'}]
                     }
+                    case RegistrarOptions.CREATE_COURSE:
                 }
                 break;
             }
@@ -252,19 +258,22 @@ export default class DataPage extends Component {
                     popup: this.popupHelper('createUserPopup',
                         'Create user',
                         // here.createUserPopup
-                        (ref) => here.createUserPopup(here, ref)
-                    )
-                },
-                    {
-                        title: "Create department",
-                        popup: this.popupHelper('createDepartmentPopup',
-                            'Create department',
-                            (ref) => this.createDepartmentPopup(here, ref))
-                    },
-                    {
-                        title: "Show departments", onClick: () => this.registrarShowDepartments(here)
-                    },
-                    {title: "Assign department head", onClick: () => this.registrarAssignDepartmentHead(here)}]
+                        (ref) => here.createUserPopup(here, ref))
+                },{
+                    title: "Create department",
+                    popup: this.popupHelper('createDepartmentPopup',
+                        'Create department',
+                        (ref) => this.createDepartmentPopup(here, ref))
+                },{
+                    title: "Show departments", onClick: () => this.registrarShowDepartments(here)
+                },{
+                    title: "Assign department head", onClick: () => this.registrarAssignDepartmentHead(here)
+                },{
+                    title: "Create Course", 
+                    popup: this.popupHelper('createNewCoursePopup', 
+                            'Create Course', 
+                            (ref) => this.createNewCoursePopup(here, ref))
+                }]
                 break;
             }
             case "Instructor" : {
@@ -442,6 +451,97 @@ export default class DataPage extends Component {
             })
     }
 
+    //something about the department field not being accepted by the API
+    //error: "The variables input contains a field name 'department' that is not defined for input object type 'CreateCourseInput' "
+    createNewCoursePopup(context, popupRef){
+        const id = React.createRef() 
+        const section = React.createRef()
+        const name = React.createRef()
+        const credit_hours = React.createRef()
+        const did = React.createRef()
+        const instructor = React.createRef()
+        return<>
+            
+                <label htmlFor="id">Course ID: </label>
+                <input ref={id} id="id"/>
+
+                <label htmlFor="section">Section Number: </label>
+                <input ref={section} id="section"/>
+
+                <label htmlFor="name">Name: </label>
+                <input ref={name} id="name"/>
+
+                <label htmlFor="credit_hours">Credit Hours: </label>
+                <input ref={credit_hours} id="credit_hours"/>
+
+                <label htmlFor="did">Department: </label>
+                <select ref={did} id="did">
+                    <option value="3764be10-1704-415a-8d14-9425ca992fe0">Physics</option>
+                    <option value="6229d847-adae-40ab-9e61-7092b3b89eaa">Mathematics</option>
+                </select>
+                
+                <label htmlFor="instructor">Instructor: </label>
+                <select ref={instructor} id="instructor">
+                    <option value="7a63b46e-793a-40dd-a83b-0b329224ef95">Jim</option>
+                    <option value="2">Bob</option>
+                </select>
+
+            <button onClick={async function () {
+                const current = popupRef.current
+                context.createNewCourse(context, 
+                    id.current.value,
+                    section.current.value,
+                    name.current.value,
+                    credit_hours.current.value,
+                    did.current.value,
+                    instructor.current.value).then(function (result) {
+                    if (result === true) {
+                        //for whatever reason, popup null in here
+                        current.close()
+                    }
+                })
+            }
+            }
+            >Submit
+            </button>
+        </>
+        
+    }
+
+    async createNewCourse(context, id, section, name, credit_hours, did, instructor){
+        try{
+            const response = await API.graphql(graphqlOperation(listCourses, {
+                filter: {
+                    id: {
+                        eq: id
+                    }
+                }
+            }))
+            if (response.data.listCourses.items.length > 0) {
+                toast.error("Course already exists")
+                return false
+            }
+            const data = await API.graphql(graphqlOperation(createCourse, {
+                input: {
+                    id: id,
+                    section: section,
+                    name: name,
+                    credit_hours: credit_hours,
+                    department: did,
+                    instructor: instructor
+                }
+            }))
+            const course = data.data.createCourse
+            console.log("New Course: ", course)
+            return true
+        }catch(error){
+            const m = "Could not generate course"
+            console.error(m, error)
+            toast.error(m)
+        }
+        return false
+    }
+
     registrarShowDepartments(context, setOption = true) {
         if (setOption)
             context.setState({registrarOptions: RegistrarOptions.VIEW_DEPARTMENTS, data: []})
@@ -468,10 +568,36 @@ export default class DataPage extends Component {
 
     studentShowCourseReports(context) {
         context.setState({studentOption: StudentOptions.SHOW_COURSE_REPORTS})
+
+        API.graphql(graphqlOperation(listCourseReports)).then(function(data) {
+            let courseReport = data.data.listCourseReports.items
+            courseReport = courseReport.map(function (value) {
+                return value;
+            })
+            console.log('course_reports', courseReport)
+            context.setState({data: courseReport})
+        }).catch(function (error){
+            const r = "Cannot load Course Report"
+            toast.error(r)
+            console.error(r, error)
+        })
     }
 
     studentShowClasses(context) {
         context.setState({studentOption: StudentOptions.SHOW_CLASSES})
+
+        API.graphql(graphqlOperation(listCourses)).then(function(data) {
+            let courses = data.data.listCourses.items
+            courses = courses.map(function (value) {
+                return value;
+            })
+            console.log('courses', courses)
+            context.setState({data: courses})
+        }).catch(function (error){
+            const c = "Cannot load Courses"
+            toast.error(c)
+            console.error(c, error)
+        })
     }
 
     makeButton(item, index) {

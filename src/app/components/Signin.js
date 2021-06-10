@@ -24,7 +24,7 @@ export default class Signin extends Component {
 
     render() {
         return <>
-            <p>{this.hasUser() ? (userFullName(this.props.user)) : "Noone signed in"}</p>
+            <p>{this.hasUser() ? (userFullName(this.props.user)) : "No one signed in"}</p>
             <p>{this.hasUser() ? this.props.user.email : ""}</p>
             <div className='verticalGroup'>
                 <Popup className='vertical'
@@ -172,9 +172,9 @@ export default class Signin extends Component {
     debugCreateUser() {
         API.graphql(graphqlOperation(createSchoolUser, {
             input: {
-                first_name: "Max",
-                last_name: "Dreher",
-                email: "dreh4899@kettering.edu",
+                first_name: "Dan",
+                last_name: "Brichan",
+                email: "bric9031@ku.edu",
                 passwrd: "not secure",
                 user_type: "REGISTRAR"
             }
