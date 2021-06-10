@@ -102,6 +102,50 @@ export function createNewPassword(rowData, context) {
         displayError('Cannot update password', error)
     })
 }
+//edit users with hopefully a popup
+export function editUser(rowData, context){
+    const fname = React.createRef()
+    const lname = React.createRef()
+    const email = React.createRef()
+    return<>
+        <div>
+            <label>First Name</label>
+            <input ref={fname} id="fname"/>
+
+            <label>Last Name</label>
+            <input ref={lname} id="lname"/>
+
+            <label>Email</label>
+            <input ref={email} id="email"/>
+
+            <button onClick={() =>this.changeUser(rowData, context, fname.current.value, lname.current.value, email.current.value)}>Change</button>
+        </div>
+    </>
+}
+
+export async function changeUser(rowData, context, fname, lname, email){
+    if(fname !== ''){
+        API.graphql(graphqlOperation(updateSchoolUser, {
+            input: {
+                fname: rowData.first_name
+            }
+        }))
+    }
+    if(lname !== ''){
+        API.graphql(graphqlOperation(updateSchoolUser, {
+            input: {
+                lname: rowData.last_name
+            }
+        }))
+    }
+    if(email !== ''){
+        API.graphql(graphqlOperation(updateSchoolUser, {
+            input: {
+                email: rowData.email
+            }
+        }))
+    }
+}
 
 export function deleteUser(rowData, context) {
     API.graphql(graphqlOperation(deleteSchoolUser, {
